@@ -1,11 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+
 import pandas as pd
 import os
-
+from sqlalchemy import create_engine, text
 app = FastAPI()
 
-from fastapi.middleware.cors import CORSMiddleware
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "data", "website.db")
+
+# tworzymy silnik z pełną ścieżką
+engine = create_engine(f"sqlite:///{DB_PATH}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,27 +26,35 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
 @app.get("/otomoto")
-def read_otomoto():
-    
-    try:
-        file_path = os.path.join(DATA_DIR, "otomoto.csv")
-        df = pd.read_csv(file_path)
+def get_otomoto(limit: int = Query(default=None, description="Limit number of rows")):
+    with engine.connect() as connection:
+        # przygotuj zapytanie z limitem
+        if limit:
+            result = connection.execute(text(f"SELECT * FROM otomoto LIMIT {limit}"))
+        else:
+            result = connection.execute(text("SELECT * FROM otomoto"))
+        
+        rows = result.fetchall()
+        columns = result.keys()  # <-- pobieramy nazwy kolumn
 
-        data =  df.head(5).to_dict(orient="records")
-    
-        return JSONResponse(content=data)
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        # Budujemy listę słowników {nazwa_kolumny: wartość}
+        data = [dict(zip(columns, row)) for row in rows]
+
+    return {"data": data}
+
 
 @app.get("/autoscout")
-def read_autoscout():
-    try:
-        file_path = os.path.join(DATA_DIR, "autoscout24.csv")
-        columns = ["make", "model", "year", "price", "currency", "mileage", "mileage_unit", "power", "power_unit", "fuel_type", "date"]
-        df = pd.read_csv(file_path, on_bad_lines='skip', header=None, names=columns)
-        df = df.fillna('')
-        data =  df.head(5).to_dict(orient="records")
-        return JSONResponse(content=data)
+def get_autoscout(limit: int = Query(default=None, description="Limit number of rows")):
+    with engine.connect() as connection:
+        if limit:
+            result = connection.execute(text(f"SELECT * FROM autoscout LIMIT {limit}"))
+        else:
+            result = connection.execute(text("SELECT * FROM autoscout"))
+        
+        rows = result.fetchall()
+        columns = result.keys()  # <-- pobieramy nazwy kolumn
 
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        # Budujemy listę słowników {nazwa_kolumny: wartość}
+        data = [dict(zip(columns, row)) for row in rows]
+
+    return {"data": data}
