@@ -26,7 +26,7 @@ def read_otomoto():
         file_path = os.path.join(DATA_DIR, "otomoto.csv")
         df = pd.read_csv(file_path)
 
-        data =  df.to_dict(orient="records")
+        data =  df.head(5).to_dict(orient="records")
     
         return JSONResponse(content=data)
     except Exception as e:
@@ -39,7 +39,7 @@ def read_autoscout():
         columns = ["make", "model", "year", "price", "currency", "mileage", "mileage_unit", "power", "power_unit", "fuel_type", "date"]
         df = pd.read_csv(file_path, on_bad_lines='skip', header=None, names=columns)
         df = df.fillna('')
-        data =  df.head(10).to_dict(orient="records")
+        data =  df.head(5).to_dict(orient="records")
         return JSONResponse(content=data)
 
     except Exception as e:
