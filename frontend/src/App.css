@@ -1,3 +1,96 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f4f4f9;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+/* Stylizacja nag³ówka */
+h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+/* Sekcje */
+section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+section h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #4a4a4a;
+  margin-bottom: 1rem;
+}
+
+/* Filtry */
+input[type="text"], input[type="number"] {
+  padding: 0.75rem;
+  margin: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  width: 200px;
+  max-width: 100%;
+}
+
+input[type="text"]:focus, input[type="number"]:focus {
+  border-color: #5b9bd5;
+  outline: none;
+}
+
+/* Tabele */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+}
+
+th {
+  background-color: #f7fafc;
+  color: #4a4a4a;
+}
+
+tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+tr:hover {
+  background-color: #edf2f7;
+  transition: background-color 0.3s ease;
+}
+
+/* Przyciski */
+button {
+  background-color: #5b9bd5;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #4a89c1;
+}
+
+button:focus {
+  outline: none;
+}
