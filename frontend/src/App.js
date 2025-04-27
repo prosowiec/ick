@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import HomePage from "./HomePage";
 import ChartPage from "./ChartPage";
+import ComparePage from "./ComparePage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/chart" element={<ChartPage />} />
+          <Route path="/compare" element={<ComparePage />} /> {/* <- to */}
         </Routes>
       </div>
     </Router>
