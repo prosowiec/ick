@@ -1,3 +1,5 @@
+// src/HomePage.jsx
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,81 +10,96 @@ function HomePage() {
   const [autoscoutLimit, setAutoscoutLimit] = useState(10);
 
   const [otomotoFilters, setOtomotoFilters] = useState({
-    make: "",
-    model: "",
+    make: "skoda",
+    model: "octavia",
     price: "",
     year: "",
     mileage: ""
   });
 
   const [autoscoutFilters, setAutoscoutFilters] = useState({
-    make: "",
-    model: "",
+    make: "skoda",
+    model: "octavia",
     price: "",
     year: "",
     power: ""
   });
 
-  const [selectedCars, setSelectedCars] = useState([]); // [{id: ..., source: 'otomoto'|'autoscout'}]
-
+  const [selectedCars, setSelectedCars] = useState([]); // [{ id, source }]
   const navigate = useNavigate();
 
+  // 1️⃣ Pierwsze pobranie danych przy mountcie
   useEffect(() => {
     fetch(`http://localhost:8000/otomoto?limit=${otomotoLimit}`)
-      .then((res) => res.json())
-      .then((data) => setOtomotoData(data.data))
-      .catch((err) => console.error(err));
-  }, [otomotoLimit]);
+      .then(res => res.json())
+      .then(data => setOtomotoData(data.data))
+      .catch(err => console.error(err));
 
-  useEffect(() => {
     fetch(`http://localhost:8000/autoscout?limit=${autoscoutLimit}`)
-      .then((res) => res.json())
-      .then((data) => setAutoscoutData(data.data))
-      .catch((err) => console.error(err));
-  }, [autoscoutLimit]);
+      .then(res => res.json())
+      .then(data => setAutoscoutData(data.data))
+      .catch(err => console.error(err));
+  }, []); // odpala się raz
 
+  // 2️⃣ Fetch Otomoto przy zmianie limitu lub filtra
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (otomotoLimit) params.append("limit", otomotoLimit);
+    Object.entries(otomotoFilters).forEach(([key, val]) => {
+      if (val) params.append(key, val);
+    });
+
+    fetch(`http://localhost:8000/otomoto?` + params.toString())
+      .then(res => res.json())
+      .then(data => setOtomotoData(data.data))
+      .catch(err => console.error(err));
+  }, [otomotoLimit, otomotoFilters]);
+
+  // 3️⃣ Fetch Autoscout przy zmianie limitu lub filtra
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (autoscoutLimit) params.append("limit", autoscoutLimit);
+    Object.entries(autoscoutFilters).forEach(([key, val]) => {
+      if (val) params.append(key, val);
+    });
+
+    fetch(`http://localhost:8000/autoscout?` + params.toString())
+      .then(res => res.json())
+      .then(data => setAutoscoutData(data.data))
+      .catch(err => console.error(err));
+  }, [autoscoutLimit, autoscoutFilters]);
+
+  // Obsługa zaznaczania aut
   const handleSelectCar = (car, source) => {
-    const carId = `${car.make}-${car.model}-${car.year}-${car.price}`;
-    const selected = selectedCars.find(selected => selected.id === carId && selected.source === source);
-    if (selected) {
-      setSelectedCars(selectedCars.filter(selected => !(selected.id === carId && selected.source === source)));
+    const carId = `${car.make};${car.model};${car.year};${car.price}`;
+    const exists = selectedCars.some(s => s.id === carId && s.source === source);
+    if (exists) {
+      setSelectedCars(selectedCars.filter(s => !(s.id === carId && s.source === source)));
     } else {
       setSelectedCars([...selectedCars, { id: carId, source }]);
     }
   };
 
-  const handleCompare = () => {
-    if (selectedCars.length >= 2) {
-      const query = selectedCars.map(car => `${car.source}:${car.id}`).join(",");
-      navigate(`/compare?cars=${query}`);
-    } else {
-      alert("Wybierz przynajmniej dwa auta do porównania!");
-    }
-  };
-
-  const applyFilter = (car, filters, keys) => {
-    return keys.every((key) => {
-      if (!filters[key]) return true;
-      return car[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
-    });
-  };
-
-  const filteredOtomotoData = otomotoData.filter((car) =>
-    applyFilter(car, otomotoFilters, ["make", "model", "price", "year", "mileage"])
-  );
-
-  const filteredAutoscoutData = autoscoutData.filter((car) =>
-    applyFilter(car, autoscoutFilters, ["make", "model", "price", "year", "power"])
-  );
-
   const isSelected = (car, source) => {
-    const carId = `${car.make}-${car.model}-${car.year}-${car.price}`;
-    return selectedCars.some(selected => selected.id === carId && selected.source === source);
+    const carId = `${car.make};${car.model};${car.year};${car.price}`;
+    return selectedCars.some(s => s.id === carId && s.source === source);
+  };
+
+  // Przejście do porównania
+  const handleCompare = () => {
+    if (selectedCars.length < 2) {
+      alert("Wybierz przynajmniej dwa auta do porównania!");
+      return;
+    }
+    const query = selectedCars.map(c => `${c.source}:${c.id}`).join(",");
+    navigate(`/compare?cars=${query}`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-blue-100 to-purple-100 p-8">
-      <h1 className="text-5xl font-extrabold text-center mb-12 text-gray-800 drop-shadow-lg">🚗 CarMat 🚗</h1>
+      <h1 className="text-5xl font-extrabold text-center mb-12 text-gray-800 drop-shadow-lg">
+        🚗 CarMat 🚗
+      </h1>
 
       <div className="grid gap-12">
 
@@ -94,20 +111,20 @@ function HomePage() {
               type="number"
               min="1"
               value={otomotoLimit}
-              onChange={(e) => setOtomotoLimit(e.target.value)}
+              onChange={e => setOtomotoLimit(Number(e.target.value))}
               className="w-20 p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           <div className="flex flex-wrap gap-4 mb-8">
-            {Object.keys(otomotoFilters).map((key) => (
+            {Object.keys(otomotoFilters).map(key => (
               <input
                 key={key}
                 type="text"
                 name={key}
                 placeholder={`Filtruj po ${key}`}
                 value={otomotoFilters[key]}
-                onChange={(e) => setOtomotoFilters({ ...otomotoFilters, [key]: e.target.value })}
+                onChange={e => setOtomotoFilters({ ...otomotoFilters, [key]: e.target.value })}
                 className="flex-1 min-w-[150px] p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
             ))}
@@ -126,23 +143,29 @@ function HomePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOtomotoData.map((car, index) => (
-                  <tr key={index} className="hover:bg-purple-100/30 transition">
-                    <td className="p-4">
-                      <input
-                        type="checkbox"
-                        checked={isSelected(car, 'otomoto')}
-                        onChange={() => handleSelectCar(car, 'otomoto')}
-                        className="h-5 w-5 accent-blue-500"
-                      />
-                    </td>
-                    <td className="p-4">{car.make}</td>
-                    <td className="p-4">{car.model}</td>
-                    <td className="p-4">{car.price} {car.currency}</td>
-                    <td className="p-4">{car.year}</td>
-                    <td className="p-4">{car.mileage} {car.mileage_unit}</td>
+                {otomotoData.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center">Ładuję...</td>
                   </tr>
-                ))}
+                ) : (
+                  otomotoData.map((car, i) => (
+                    <tr key={i} className="hover:bg-purple-100/30 transition">
+                      <td className="p-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected(car, 'otomoto')}
+                          onChange={() => handleSelectCar(car, 'otomoto')}
+                          className="h-5 w-5 accent-blue-500"
+                        />
+                      </td>
+                      <td className="p-4">{car.make}</td>
+                      <td className="p-4">{car.model}</td>
+                      <td className="p-4">{car.price} {car.currency}</td>
+                      <td className="p-4">{car.year}</td>
+                      <td className="p-4">{car.mileage} {car.mileage_unit}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -156,20 +179,20 @@ function HomePage() {
               type="number"
               min="1"
               value={autoscoutLimit}
-              onChange={(e) => setAutoscoutLimit(e.target.value)}
+              onChange={e => setAutoscoutLimit(Number(e.target.value))}
               className="w-20 p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           <div className="flex flex-wrap gap-4 mb-8">
-            {Object.keys(autoscoutFilters).map((key) => (
+            {Object.keys(autoscoutFilters).map(key => (
               <input
                 key={key}
                 type="text"
                 name={key}
                 placeholder={`Filtruj po ${key}`}
                 value={autoscoutFilters[key]}
-                onChange={(e) => setAutoscoutFilters({ ...autoscoutFilters, [key]: e.target.value })}
+                onChange={e => setAutoscoutFilters({ ...autoscoutFilters, [key]: e.target.value })}
                 className="flex-1 min-w-[150px] p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
               />
             ))}
@@ -188,27 +211,34 @@ function HomePage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAutoscoutData.map((car, index) => (
-                  <tr key={index} className="hover:bg-blue-100/30 transition">
-                    <td className="p-4">
-                      <input
-                        type="checkbox"
-                        checked={isSelected(car, 'autoscout')}
-                        onChange={() => handleSelectCar(car, 'autoscout')}
-                        className="h-5 w-5 accent-purple-500"
-                      />
-                    </td>
-                    <td className="p-4">{car.make}</td>
-                    <td className="p-4">{car.model}</td>
-                    <td className="p-4">{car.year}</td>
-                    <td className="p-4">{car.price} {car.currency}</td>
-                    <td className="p-4">{car.power} {car.power_unit}</td>
+                {autoscoutData.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="p-4 text-center">Ładuję...</td>
                   </tr>
-                ))}
+                ) : (
+                  autoscoutData.map((car, i) => (
+                    <tr key={i} className="hover:bg-blue-100/30 transition">
+                      <td className="p-4">
+                        <input
+                          type="checkbox"
+                          checked={isSelected(car, 'autoscout')}
+                          onChange={() => handleSelectCar(car, 'autoscout')}
+                          className="h-5 w-5 accent-purple-500"
+                        />
+                      </td>
+                      <td className="p-4">{car.make}</td>
+                      <td className="p-4">{car.model}</td>
+                      <td className="p-4">{car.year}</td>
+                      <td className="p-4">{car.price} {car.currency}</td>
+                      <td className="p-4">{car.power} {car.power_unit}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </section>
+
       </div>
 
       {selectedCars.length >= 2 && (

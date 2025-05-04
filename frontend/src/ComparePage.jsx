@@ -17,11 +17,20 @@ function ComparePage() {
     async function fetchCarDetails() {
       const fetchedCars = await Promise.all(
         carsList.map(async ({ source, id }) => {
-          const [make, model, year, price] = id.split("-");
+          const [make, model, year, price] = id.split(";");
           let url = `http://localhost:8000/${source}?make=${make}&model=${model}&year=${year}&price=${price}`;
           const res = await fetch(url);
           const data = await res.json();
-          return { source, ...data.data[0] };
+
+          console.log('Fetched Data:', data); // Zaloguj odpowiedź, aby sprawdzić strukturę
+
+          // Sprawdź, czy dane są prawidłowe
+          if (data && data.data && data.data[0]) {
+            return { source, ...data.data[0] };
+          } else {
+            // Obsługuje brak danych
+            return { source, error: "Brak danych dla tego samochodu" };
+          }
         })
       );
 
@@ -45,16 +54,20 @@ function ComparePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
         {carsData.map((car, index) => (
           <div key={index} className="bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6 text-center">{car.make} {car.model}</h2>
-            <ul className="text-lg space-y-4">
-              <li><strong>Marka:</strong> {car.make}</li>
-              <li><strong>Model:</strong> {car.model}</li>
-              <li><strong>Rok produkcji:</strong> {car.year}</li>
-              <li><strong>Cena:</strong> {car.price} {car.currency}</li>
-              {car.mileage && <li><strong>Przebieg:</strong> {car.mileage} {car.mileage_unit}</li>}
-              {car.power && <li><strong>Moc:</strong> {car.power} {car.power_unit}</li>}
-              <li><strong>Źródło:</strong> {car.source === "otomoto" ? "Otomoto" : "Autoscout"}</li>
-            </ul>
+            <h2 className="text-2xl font-bold mb-6 text-center">
+              {car.error ? car.error : `${car.make} ${car.model}`}
+            </h2>
+            {!car.error && (
+              <ul className="text-lg space-y-4">
+                <li><strong>Marka:</strong> {car.make}</li>
+                <li><strong>Model:</strong> {car.model}</li>
+                <li><strong>Rok produkcji:</strong> {car.year}</li>
+                <li><strong>Cena:</strong> {car.price} {car.currency}</li>
+                {car.mileage && <li><strong>Przebieg:</strong> {car.mileage} {car.mileage_unit}</li>}
+                {car.power && <li><strong>Moc:</strong> {car.power} {car.power_unit}</li>}
+                <li><strong>Źródło:</strong> {car.source === "otomoto" ? "Otomoto" : "Autoscout"}</li>
+              </ul>
+            )}
           </div>
         ))}
       </div>
