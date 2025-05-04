@@ -6,16 +6,26 @@ function HomePage() {
   const [autoscoutData, setAutoscoutData] = useState([]);
   const [otomotoLimit, setOtomotoLimit] = useState(10);
   const [autoscoutLimit, setAutoscoutLimit] = useState(10);
-  const [selectedCars, setSelectedCars] = useState([]); // <-- nowy
-  const [filters, setFilters] = useState({
-    brand: "",
+
+  const [otomotoFilters, setOtomotoFilters] = useState({
+    make: "",
     model: "",
     price: "",
     year: "",
     mileage: ""
   });
 
-  const navigate = useNavigate(); // <-- do nawigacji
+  const [autoscoutFilters, setAutoscoutFilters] = useState({
+    make: "",
+    model: "",
+    price: "",
+    year: "",
+    power: ""
+  });
+
+  const [selectedCars, setSelectedCars] = useState([]); // [{id: ..., source: 'otomoto'|'autoscout'}]
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`http://localhost:8000/otomoto?limit=${otomotoLimit}`)
@@ -31,167 +41,181 @@ function HomePage() {
       .catch((err) => console.error(err));
   }, [autoscoutLimit]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters({ ...filters, [name]: value });
-  };
-
-  const handleSelectCar = (car) => {
-    const carId = `${car.brand}-${car.model}-${car.year}-${car.price}`; // generujemy unikalny ID
-    if (selectedCars.includes(carId)) {
-      setSelectedCars(selectedCars.filter(id => id !== carId));
+  const handleSelectCar = (car, source) => {
+    const carId = `${car.make}-${car.model}-${car.year}-${car.price}`;
+    const selected = selectedCars.find(selected => selected.id === carId && selected.source === source);
+    if (selected) {
+      setSelectedCars(selectedCars.filter(selected => !(selected.id === carId && selected.source === source)));
     } else {
-      setSelectedCars([...selectedCars, carId]);
+      setSelectedCars([...selectedCars, { id: carId, source }]);
     }
   };
 
   const handleCompare = () => {
     if (selectedCars.length >= 2) {
-      navigate(`/compare?ids=${selectedCars.join(",")}`);
+      const query = selectedCars.map(car => `${car.source}:${car.id}`).join(",");
+      navigate(`/compare?cars=${query}`);
     } else {
       alert("Wybierz przynajmniej dwa auta do porównania!");
     }
   };
 
-  const applyFilter = (car, filterKey) => {
-    if (!filters[filterKey]) return true;
-    return car[filterKey]?.toString().toLowerCase().includes(filters[filterKey].toLowerCase());
+  const applyFilter = (car, filters, keys) => {
+    return keys.every((key) => {
+      if (!filters[key]) return true;
+      return car[key]?.toString().toLowerCase().includes(filters[key].toLowerCase());
+    });
   };
 
-  const filteredOtomotoData = otomotoData.filter((car) => {
-    return (
-      applyFilter(car, "brand") &&
-      applyFilter(car, "model") &&
-      applyFilter(car, "price") &&
-      applyFilter(car, "year") &&
-      applyFilter(car, "mileage")
-    );
-  });
+  const filteredOtomotoData = otomotoData.filter((car) =>
+    applyFilter(car, otomotoFilters, ["make", "model", "price", "year", "mileage"])
+  );
 
-  const filteredAutoscoutData = autoscoutData.filter((car) => {
-    return (
-      applyFilter(car, "brand") &&
-      applyFilter(car, "model") &&
-      applyFilter(car, "price") &&
-      applyFilter(car, "year") &&
-      applyFilter(car, "power")
-    );
-  });
+  const filteredAutoscoutData = autoscoutData.filter((car) =>
+    applyFilter(car, autoscoutFilters, ["make", "model", "price", "year", "power"])
+  );
+
+  const isSelected = (car, source) => {
+    const carId = `${car.make}-${car.model}-${car.year}-${car.price}`;
+    return selectedCars.some(selected => selected.id === carId && selected.source === source);
+  };
 
   return (
-    <div>
-      <h1 className="text-4xl font-bold text-center mb-8">Samochody 🚗</h1>
+    <div className="min-h-screen bg-gradient-to-r from-blue-100 to-purple-100 p-8">
+      <h1 className="text-5xl font-extrabold text-center mb-12 text-gray-800 drop-shadow-lg">🚗 CarMat 🚗</h1>
 
-      <section className="mb-12">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Otomoto</h2>
-          <input
-            type="number"
-            min="1"
-            value={otomotoLimit}
-            onChange={(e) => setOtomotoLimit(e.target.value)}
-            className="border p-2 rounded"
-          />
-        </div>
+      <div className="grid gap-12">
 
-        {/* Filtry */}
-        <div className="flex flex-wrap gap-4 mb-4">
-          {/* ... inputy filtrów (bez zmian) */}
-        </div>
+        {/* OTOMOTO */}
+        <section className="bg-white/60 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-semibold text-gray-700">Otomoto</h2>
+            <input
+              type="number"
+              min="1"
+              value={otomotoLimit}
+              onChange={(e) => setOtomotoLimit(e.target.value)}
+              className="w-20 p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-lg shadow-md">
-            <thead className="bg-gray-200">
-              <tr>
-                <th className="p-3">✔️</th> {/* Nowa kolumna */}
-                <th className="p-3">Marka</th>
-                <th className="p-3">Model</th>
-                <th className="p-3">Cena</th>
-                <th className="p-3">Rok</th>
-                <th className="p-3">Przebieg</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOtomotoData.map((car, index) => {
-                const carId = `${car.brand}-${car.model}-${car.year}-${car.price}`;
-                return (
-                  <tr key={index} className="border-b hover:bg-gray-100">
-                    <td className="p-3">
+          <div className="flex flex-wrap gap-4 mb-8">
+            {Object.keys(otomotoFilters).map((key) => (
+              <input
+                key={key}
+                type="text"
+                name={key}
+                placeholder={`Filtruj po ${key}`}
+                value={otomotoFilters[key]}
+                onChange={(e) => setOtomotoFilters({ ...otomotoFilters, [key]: e.target.value })}
+                className="flex-1 min-w-[150px] p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+            ))}
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl shadow-md">
+            <table className="min-w-full bg-white text-gray-800">
+              <thead className="bg-gradient-to-r from-purple-400 to-blue-400 text-white">
+                <tr>
+                  <th className="p-4 text-left">✔️</th>
+                  <th className="p-4 text-left">Marka</th>
+                  <th className="p-4 text-left">Model</th>
+                  <th className="p-4 text-left">Cena</th>
+                  <th className="p-4 text-left">Rok</th>
+                  <th className="p-4 text-left">Przebieg</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOtomotoData.map((car, index) => (
+                  <tr key={index} className="hover:bg-purple-100/30 transition">
+                    <td className="p-4">
                       <input
                         type="checkbox"
-                        checked={selectedCars.includes(carId)}
-                        onChange={() => handleSelectCar(car)}
+                        checked={isSelected(car, 'otomoto')}
+                        onChange={() => handleSelectCar(car, 'otomoto')}
+                        className="h-5 w-5 accent-blue-500"
                       />
                     </td>
-                    <td className="p-3">{car.brand}</td>
-                    <td className="p-3">{car.model}</td>
-                    <td className="p-3">{car.price} {car.currency}</td>
-                    <td className="p-3">{car.year}</td>
-                    <td className="p-3">{car.mileage} {car.mileage_unit}</td>
+                    <td className="p-4">{car.make}</td>
+                    <td className="p-4">{car.model}</td>
+                    <td className="p-4">{car.price} {car.currency}</td>
+                    <td className="p-4">{car.year}</td>
+                    <td className="p-4">{car.mileage} {car.mileage_unit}</td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-      {/* Autoscout */}
-      <section>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Autoscout</h2>
-          <input
-            type="number"
-            min="1"
-            value={autoscoutLimit}
-            onChange={(e) => setAutoscoutLimit(e.target.value)}
-            className="border p-2 rounded"
-          />
-        </div>
+        {/* AUTOSCOUT */}
+        <section className="bg-white/60 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-semibold text-gray-700">Autoscout</h2>
+            <input
+              type="number"
+              min="1"
+              value={autoscoutLimit}
+              onChange={(e) => setAutoscoutLimit(e.target.value)}
+              className="w-20 p-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white rounded-lg shadow-md">
-            <thead className="bg-gray-200">
-              <tr>
-                <th className="p-3">✔️</th>
-                <th className="p-3">Marka</th>
-                <th className="p-3">Model</th>
-                <th className="p-3">Rok</th>
-                <th className="p-3">Cena</th>
-                <th className="p-3">Moc</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAutoscoutData.map((car, index) => {
-                const carId = `${car.brand}-${car.model}-${car.year}-${car.price}`;
-                return (
-                  <tr key={index} className="border-b hover:bg-gray-100">
-                    <td className="p-3">
+          <div className="flex flex-wrap gap-4 mb-8">
+            {Object.keys(autoscoutFilters).map((key) => (
+              <input
+                key={key}
+                type="text"
+                name={key}
+                placeholder={`Filtruj po ${key}`}
+                value={autoscoutFilters[key]}
+                onChange={(e) => setAutoscoutFilters({ ...autoscoutFilters, [key]: e.target.value })}
+                className="flex-1 min-w-[150px] p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            ))}
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl shadow-md">
+            <table className="min-w-full bg-white text-gray-800">
+              <thead className="bg-gradient-to-r from-blue-400 to-purple-400 text-white">
+                <tr>
+                  <th className="p-4 text-left">✔️</th>
+                  <th className="p-4 text-left">Marka</th>
+                  <th className="p-4 text-left">Model</th>
+                  <th className="p-4 text-left">Rok</th>
+                  <th className="p-4 text-left">Cena</th>
+                  <th className="p-4 text-left">Moc</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAutoscoutData.map((car, index) => (
+                  <tr key={index} className="hover:bg-blue-100/30 transition">
+                    <td className="p-4">
                       <input
                         type="checkbox"
-                        checked={selectedCars.includes(carId)}
-                        onChange={() => handleSelectCar(car)}
+                        checked={isSelected(car, 'autoscout')}
+                        onChange={() => handleSelectCar(car, 'autoscout')}
+                        className="h-5 w-5 accent-purple-500"
                       />
                     </td>
-                    <td className="p-3">{car.brand}</td>
-                    <td className="p-3">{car.model}</td>
-                    <td className="p-3">{car.year}</td>
-                    <td className="p-3">{car.price} {car.currency}</td>
-                    <td className="p-3">{car.power} {car.power_unit}</td>
+                    <td className="p-4">{car.make}</td>
+                    <td className="p-4">{car.model}</td>
+                    <td className="p-4">{car.year}</td>
+                    <td className="p-4">{car.price} {car.currency}</td>
+                    <td className="p-4">{car.power} {car.power_unit}</td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
 
-      {/* PRZYCISK Porównaj */}
       {selectedCars.length >= 2 && (
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-12">
           <button
             onClick={handleCompare}
-            className="bg-blue-500 text-white font-bold py-2 px-6 rounded hover:bg-blue-700"
+            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-lg font-bold py-3 px-8 rounded-full shadow-lg hover:scale-105 transition-transform"
           >
             Porównaj wybrane auta
           </button>

@@ -1,40 +1,65 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
-export default function ComparePage() {
-  const [cars, setCars] = useState([]);
-  const location = useLocation();
+function ComparePage() {
+  const [searchParams] = useSearchParams();
+  const [carsData, setCarsData] = useState([]);
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const ids = queryParams.get("ids");
+    const carsQuery = searchParams.get("cars");
+    if (!carsQuery) return;
 
-    if (ids) {
-      fetch(`/api/compare?ids=${ids}`)
-        .then((res) => res.json())
-        .then((data) => setCars(data));
+    const carsList = carsQuery.split(",").map((entry) => {
+      const [source, id] = entry.split(":");
+      return { source, id };
+    });
+
+    async function fetchCarDetails() {
+      const fetchedCars = await Promise.all(
+        carsList.map(async ({ source, id }) => {
+          const [make, model, year, price] = id.split("-");
+          let url = `http://localhost:8000/${source}?make=${make}&model=${model}&year=${year}&price=${price}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          return { source, ...data.data[0] };
+        })
+      );
+
+      setCarsData(fetchedCars);
     }
-  }, [location]);
 
-  if (cars.length === 0) {
-    return <div>Ładowanie aut do porównania...</div>;
+    fetchCarDetails();
+  }, [searchParams]);
+
+  if (carsData.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-3xl font-bold">
+        Ładowanie danych samochodów...
+      </div>
+    );
   }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Porównanie samochodów 🚗🚙</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {cars.map((car, idx) => (
-          <div key={idx} className="border rounded p-4 shadow">
-            <p><strong>Marka:</strong> {car.brand}</p>
-            <p><strong>Model:</strong> {car.model}</p>
-            <p><strong>Cena:</strong> {car.price} PLN</p>
-            <p><strong>Rok:</strong> {car.year}</p>
-            <p><strong>Przebieg:</strong> {car.mileage} km</p>
-            <p><strong>Źródło:</strong> {car.source}</p>
+    <div className="min-h-screen bg-gradient-to-r from-purple-100 to-blue-100 p-8">
+      <h1 className="text-5xl font-extrabold text-center mb-12 text-gray-800">Porównanie samochodów 🚗🚗</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        {carsData.map((car, index) => (
+          <div key={index} className="bg-white/70 backdrop-blur-md rounded-3xl p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold mb-6 text-center">{car.make} {car.model}</h2>
+            <ul className="text-lg space-y-4">
+              <li><strong>Marka:</strong> {car.make}</li>
+              <li><strong>Model:</strong> {car.model}</li>
+              <li><strong>Rok produkcji:</strong> {car.year}</li>
+              <li><strong>Cena:</strong> {car.price} {car.currency}</li>
+              {car.mileage && <li><strong>Przebieg:</strong> {car.mileage} {car.mileage_unit}</li>}
+              {car.power && <li><strong>Moc:</strong> {car.power} {car.power_unit}</li>}
+              <li><strong>Źródło:</strong> {car.source === "otomoto" ? "Otomoto" : "Autoscout"}</li>
+            </ul>
           </div>
         ))}
       </div>
     </div>
   );
 }
+
+export default ComparePage;
