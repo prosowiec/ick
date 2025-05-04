@@ -1,3 +1,8 @@
+aby urochomić 
+
+.\start.ps1
+
+
 zaistaluj node.js
 https://nodejs.org/en
 
