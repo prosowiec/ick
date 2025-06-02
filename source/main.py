@@ -120,7 +120,7 @@ def get_otomoto_avg_by_year(
 
         results = query.all()
         data = [{"year": year, "avg_price": round(avg_price)} for year, avg_price in results]
-        print('3',data)
+        #print('3',data)
         return {"data": data}
     
 
@@ -148,3 +148,4 @@ def get_autoscout_avg_by_year(
         results = query.all()
         data = [{"year": year, "avg_price": round(avg_price)} for year, avg_price in results]
         return {"data": data}
+

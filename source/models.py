@@ -36,3 +36,21 @@ class Autoscout(Base):
     power_unit   = Column(String)
     fuel_type    = Column(String)
     date         = Column(String)
+
+class UserReview(Base):
+    __tablename__ = "user_reviews"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    make = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    year = Column(Integer, nullable=False)
+
+    username = Column(String, nullable=False)
+    rating = Column(Float)  # np. skala 0-5
+    comment = Column(String)  # tekstowa opinia
+    date = Column(String)  # data wystawienia opinii
+
+    # Można dodać indeks dla szybszych zapytań
+    __table_args__ = (
+        {},
+    )

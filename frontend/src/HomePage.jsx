@@ -1,7 +1,24 @@
-// src/HomePage.jsx
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Pomocnicza funkcja fetch z timeoutem
+function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error("Request timed out"));
+    }, timeout);
+
+    fetch(url, options)
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
 
 function HomePage() {
   const [otomotoData, setOtomotoData] = useState([]);
@@ -25,21 +42,32 @@ function HomePage() {
     power: ""
   });
 
-  const [selectedCars, setSelectedCars] = useState([]); // [{ id, source }]
+  const [selectedCars, setSelectedCars] = useState([]);
+  const [otomotoLoading, setOtomotoLoading] = useState(true);
+  const [autoscoutLoading, setAutoscoutLoading] = useState(true);
+  const [otomotoError, setOtomotoError] = useState("");
+  const [autoscoutError, setAutoscoutError] = useState("");
   const navigate = useNavigate();
 
   // 1️⃣ Pierwsze pobranie danych przy mountcie
   useEffect(() => {
-    fetch(`http://localhost:8000/otomoto?limit=${otomotoLimit}`)
+    setOtomotoLoading(true);
+    setAutoscoutLoading(true);
+    setOtomotoError("");
+    setAutoscoutError("");
+
+    fetchWithTimeout(`http://localhost:8000/otomoto?limit=${otomotoLimit}`)
       .then(res => res.json())
       .then(data => setOtomotoData(data.data))
-      .catch(err => console.error(err));
+      .catch(err => setOtomotoError("Brak wyników (przekroczono czas oczekiwania)"))
+      .finally(() => setOtomotoLoading(false));
 
-    fetch(`http://localhost:8000/autoscout?limit=${autoscoutLimit}`)
+    fetchWithTimeout(`http://localhost:8000/autoscout?limit=${autoscoutLimit}`)
       .then(res => res.json())
       .then(data => setAutoscoutData(data.data))
-      .catch(err => console.error(err));
-  }, []); // odpala się raz
+      .catch(err => setAutoscoutError("Brak wyników (przekroczono czas oczekiwania)"))
+      .finally(() => setAutoscoutLoading(false));
+  }, []);
 
   // 2️⃣ Fetch Otomoto przy zmianie limitu lub filtra
   useEffect(() => {
@@ -49,10 +77,14 @@ function HomePage() {
       if (val) params.append(key, val);
     });
 
-    fetch(`http://localhost:8000/otomoto?` + params.toString())
+    setOtomotoLoading(true);
+    setOtomotoError("");
+
+    fetchWithTimeout(`http://localhost:8000/otomoto?${params.toString()}`)
       .then(res => res.json())
       .then(data => setOtomotoData(data.data))
-      .catch(err => console.error(err));
+      .catch(err => setOtomotoError("Brak wyników (przekroczono czas oczekiwania)"))
+      .finally(() => setOtomotoLoading(false));
   }, [otomotoLimit, otomotoFilters]);
 
   // 3️⃣ Fetch Autoscout przy zmianie limitu lub filtra
@@ -63,13 +95,16 @@ function HomePage() {
       if (val) params.append(key, val);
     });
 
-    fetch(`http://localhost:8000/autoscout?` + params.toString())
+    setAutoscoutLoading(true);
+    setAutoscoutError("");
+
+    fetchWithTimeout(`http://localhost:8000/autoscout?${params.toString()}`)
       .then(res => res.json())
       .then(data => setAutoscoutData(data.data))
-      .catch(err => console.error(err));
+      .catch(err => setAutoscoutError("Brak wyników (przekroczono czas oczekiwania)"))
+      .finally(() => setAutoscoutLoading(false));
   }, [autoscoutLimit, autoscoutFilters]);
 
-  // Obsługa zaznaczania aut
   const handleSelectCar = (car, source) => {
     const carId = `${car.make};${car.model};${car.year};${car.price}`;
     const exists = selectedCars.some(s => s.id === carId && s.source === source);
@@ -85,7 +120,6 @@ function HomePage() {
     return selectedCars.some(s => s.id === carId && s.source === source);
   };
 
-  // Przejście do porównania
   const handleCompare = () => {
     if (selectedCars.length < 2) {
       alert("Wybierz przynajmniej dwa auta do porównania!");
@@ -143,10 +177,12 @@ function HomePage() {
                 </tr>
               </thead>
               <tbody>
-                {otomotoData.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="p-4 text-center">Ładuję...</td>
-                  </tr>
+                {otomotoLoading ? (
+                  <tr><td colSpan="6" className="p-4 text-center">Ładuję...</td></tr>
+                ) : otomotoError ? (
+                  <tr><td colSpan="6" className="p-4 text-center text-red-600">{otomotoError}</td></tr>
+                ) : otomotoData.length === 0 ? (
+                  <tr><td colSpan="6" className="p-4 text-center">Brak wyników.</td></tr>
                 ) : (
                   otomotoData.map((car, i) => (
                     <tr key={i} className="hover:bg-purple-100/30 transition">
@@ -211,10 +247,12 @@ function HomePage() {
                 </tr>
               </thead>
               <tbody>
-                {autoscoutData.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="p-4 text-center">Ładuję...</td>
-                  </tr>
+                {autoscoutLoading ? (
+                  <tr><td colSpan="6" className="p-4 text-center">Ładuję...</td></tr>
+                ) : autoscoutError ? (
+                  <tr><td colSpan="6" className="p-4 text-center text-red-600">{autoscoutError}</td></tr>
+                ) : autoscoutData.length === 0 ? (
+                  <tr><td colSpan="6" className="p-4 text-center">Brak wyników.</td></tr>
                 ) : (
                   autoscoutData.map((car, i) => (
                     <tr key={i} className="hover:bg-blue-100/30 transition">
@@ -238,7 +276,6 @@ function HomePage() {
             </table>
           </div>
         </section>
-
       </div>
 
       {selectedCars.length >= 2 && (
