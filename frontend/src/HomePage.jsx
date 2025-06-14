@@ -174,15 +174,16 @@ function HomePage() {
                   <th className="p-4 text-left">Cena</th>
                   <th className="p-4 text-left">Rok</th>
                   <th className="p-4 text-left">Przebieg</th>
+                  <th className="p-4 text-left">Opinia</th>
                 </tr>
               </thead>
               <tbody>
                 {otomotoLoading ? (
-                  <tr><td colSpan="6" className="p-4 text-center">Ładuję...</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center">Ładuję...</td></tr>
                 ) : otomotoError ? (
-                  <tr><td colSpan="6" className="p-4 text-center text-red-600">{otomotoError}</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center text-red-600">{otomotoError}</td></tr>
                 ) : otomotoData.length === 0 ? (
-                  <tr><td colSpan="6" className="p-4 text-center">Brak wyników.</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center">Brak wyników.</td></tr>
                 ) : (
                   otomotoData.map((car, i) => (
                     <tr key={i} className="hover:bg-purple-100/30 transition">
@@ -199,6 +200,7 @@ function HomePage() {
                       <td className="p-4">{car.price} {car.currency}</td>
                       <td className="p-4">{car.year}</td>
                       <td className="p-4">{car.mileage} {car.mileage_unit}</td>
+                      <td className="p-4">Lorem Ipsum</td>
                     </tr>
                   ))
                 )}
@@ -244,15 +246,16 @@ function HomePage() {
                   <th className="p-4 text-left">Rok</th>
                   <th className="p-4 text-left">Cena</th>
                   <th className="p-4 text-left">Moc</th>
+                  <th className="p-4 text-left">Opinia</th>
                 </tr>
               </thead>
               <tbody>
                 {autoscoutLoading ? (
-                  <tr><td colSpan="6" className="p-4 text-center">Ładuję...</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center">Ładuję...</td></tr>
                 ) : autoscoutError ? (
-                  <tr><td colSpan="6" className="p-4 text-center text-red-600">{autoscoutError}</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center text-red-600">{autoscoutError}</td></tr>
                 ) : autoscoutData.length === 0 ? (
-                  <tr><td colSpan="6" className="p-4 text-center">Brak wyników.</td></tr>
+                  <tr><td colSpan="7" className="p-4 text-center">Brak wyników.</td></tr>
                 ) : (
                   autoscoutData.map((car, i) => (
                     <tr key={i} className="hover:bg-blue-100/30 transition">
@@ -269,6 +272,7 @@ function HomePage() {
                       <td className="p-4">{car.year}</td>
                       <td className="p-4">{car.price} {car.currency}</td>
                       <td className="p-4">{car.power} {car.power_unit}</td>
+                      <td className="p-4">Lorem Ipsum</td>
                     </tr>
                   ))
                 )}
