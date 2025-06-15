@@ -7,7 +7,7 @@ class ReviewCreate(BaseModel):
     comment: str
 
 class ReviewOut(BaseModel):
-    id: int
+    #id: int
     brand_model_year: str
     author: str | None = None
     rating: str

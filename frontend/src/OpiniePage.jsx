@@ -17,48 +17,44 @@ const ReviewsPage = () => {
 
   const [submitted, setSubmitted] = useState(false);
 
-  // Pobieranie opcji z backendu
+  // Pobieranie danych po załadowaniu komponentu
   useEffect(() => {
     axios.get("http://localhost:8000/reviews/options")
       .then((res) => {
-        const opts = res.data.options.map(([make, model, year]) => ({
-          make,
-          model,
-          year
-        }));
-        setOptions(opts);
+        const data = res.data.options || res.data;
+        setOptions(data);
 
-        const uniqueMakes = [...new Set(opts.map(o => o.make))];
+        const uniqueMakes = [...new Set(data.map(o => o.make))];
         setMakes(uniqueMakes);
       })
-      .catch((err) => console.error("Błąd ładowania opcji:", err));
+      .catch((err) => console.error("Błąd pobierania opcji:", err));
   }, []);
 
-  // Po wyborze marki
+  // Aktualizacja modeli po wyborze marki
   useEffect(() => {
+    if (!selectedMake) return;
     const filtered = options.filter(o => o.make === selectedMake);
     const uniqueModels = [...new Set(filtered.map(o => o.model))];
     setModels(uniqueModels);
     setSelectedModel("");
-    setSelectedYear("");
     setYears([]);
+    setSelectedYear("");
   }, [selectedMake]);
 
-  // Po wyborze modelu
+  // Aktualizacja lat po wyborze modelu
   useEffect(() => {
-    const filtered = options.filter(o =>
-      o.make === selectedMake && o.model === selectedModel
-    );
+    if (!selectedMake || !selectedModel) return;
+    const filtered = options.filter(o => o.make === selectedMake && o.model === selectedModel);
     const uniqueYears = [...new Set(filtered.map(o => o.year))];
-    setYears(uniqueYears);
+    setYears(uniqueYears.sort((a, b) => b - a));
     setSelectedYear("");
   }, [selectedModel]);
 
-  // Wysyłanie formularza
+  // Obsługa wysyłki formularza
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const brand_model_year = `${selectedMake};${selectedModel};${selectedYear}`;
+
     axios.post("http://localhost:8000/reviews", {
       brand_model_year,
       author,
@@ -75,21 +71,21 @@ const ReviewsPage = () => {
         setSelectedYear("");
       })
       .catch(err => {
-        console.error("Błąd wysyłania opinii:", err);
-        alert("Nie udało się wysłać opinii.");
+        console.error("Błąd zapisu opinii:", err);
+        alert("Nie udało się zapisać opinii.");
       });
   };
 
   return (
     <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-md mt-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">Dodaj opinię o samochodzie</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Dodaj opinię</h2>
 
       {submitted && (
         <p className="text-green-600 mb-4 text-center">Opinia została dodana!</p>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Dropdown Marka */}
+        {/* Marka */}
         <div>
           <label className="block font-medium mb-1">Marka</label>
           <select
@@ -99,13 +95,13 @@ const ReviewsPage = () => {
             required
           >
             <option value="">-- Wybierz markę --</option>
-            {makes.map((make) => (
+            {makes.map(make => (
               <option key={make} value={make}>{make}</option>
             ))}
           </select>
         </div>
 
-        {/* Dropdown Model */}
+        {/* Model */}
         <div>
           <label className="block font-medium mb-1">Model</label>
           <select
@@ -116,13 +112,13 @@ const ReviewsPage = () => {
             disabled={!selectedMake}
           >
             <option value="">-- Wybierz model --</option>
-            {models.map((model) => (
+            {models.map(model => (
               <option key={model} value={model}>{model}</option>
             ))}
           </select>
         </div>
 
-        {/* Dropdown Rok */}
+        {/* Rok */}
         <div>
           <label className="block font-medium mb-1">Rok</label>
           <select
@@ -133,7 +129,7 @@ const ReviewsPage = () => {
             disabled={!selectedModel}
           >
             <option value="">-- Wybierz rok --</option>
-            {years.map((year) => (
+            {years.map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
@@ -141,13 +137,13 @@ const ReviewsPage = () => {
 
         {/* Autor */}
         <div>
-          <label className="block font-medium mb-1">Autor (opcjonalnie)</label>
+          <label className="block font-medium mb-1">Autor</label>
           <input
             type="text"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
             className="w-full border rounded p-2"
-            placeholder="Twoje imię"
+            placeholder="Twoje imię (opcjonalnie)"
           />
         </div>
 
@@ -160,8 +156,8 @@ const ReviewsPage = () => {
             className="w-full border rounded p-2"
             required
           >
-            {[1, 2, 3, 4, 5].map((r) => (
-              <option key={r} value={r}>{r}</option>
+            {[1, 2, 3, 4, 5].map(num => (
+              <option key={num} value={num}>{num}</option>
             ))}
           </select>
         </div>
@@ -174,11 +170,12 @@ const ReviewsPage = () => {
             onChange={(e) => setComment(e.target.value)}
             className="w-full border rounded p-2"
             rows="4"
-            placeholder="Twoja opinia"
             required
+            placeholder="Twoja opinia"
           />
         </div>
 
+        {/* Przycisk */}
         <button
           type="submit"
           className="w-full bg-blue-500 text-white rounded py-2 hover:bg-blue-600"
