@@ -2,11 +2,11 @@ from fastapi import FastAPI, Query, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
-
+from schemas import ReviewCreate, ReviewOut
 import os
 from sqlalchemy import create_engine,func
 from sqlalchemy.orm import sessionmaker, Session
-from models import Base, Otomoto, Autoscout  # Dodaj plik models.py poniżej
+from models import Base, Otomoto, Autoscout, Review  # Dodaj plik models.py poniżej
 
 app = FastAPI()
 
@@ -60,7 +60,8 @@ def get_otomoto(
             query = query.limit(limit)
 
         results = query.all()
-        data = [dict(make=row.make, model=row.model, year=row.year, price=row.price) for row in results]
+        print(results)
+        data = [dict(make=row.make, model=row.model, year=row.year, price=row.price, mileage = row.mileage) for row in results]
         #print(data)
         return {"data": data}
 
@@ -91,7 +92,7 @@ def get_autoscout(
             query = query.limit(limit)
 
         results = query.all()
-        data = [dict(make=row.make, model=row.model, year=row.year, price=row.price) for row in results]
+        data = [dict(make=row.make, model=row.model, year=row.year, price=row.price, mileage = row.mileage) for row in results]
         #print('2',data)
         return {"data": data}
     
@@ -149,3 +150,22 @@ def get_autoscout_avg_by_year(
         data = [{"year": year, "avg_price": round(avg_price)} for year, avg_price in results]
         return {"data": data}
 
+@app.post("/reviews", response_model=ReviewOut)
+def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
+    db_review = Review(**review.dict())
+    db.add(db_review)
+    db.commit()
+    db.refresh(db_review)
+    return db_review
+
+@app.get("/reviews", response_model=list[ReviewOut])
+def get_all_reviews(brand_model_year: str = None, db: Session = Depends(get_db)):
+    if brand_model_year:
+        return db.query(Review).filter(Review.brand_model_year == brand_model_year).all()
+    return db.query(Review).all()
+
+@app.get("/reviews/options")
+def get_review_options(db: Session = Depends(get_db)):
+    rows = db.query(Otomoto.make,Otomoto.model,Otomoto.year ).distinct().all()
+    #result = {"options": [row[0] for row in rows]}
+    return rows

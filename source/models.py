@@ -54,3 +54,13 @@ class UserReview(Base):
     __table_args__ = (
         {},
     )
+    
+    
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    #source: Column(String, nullable=False)
+    brand_model_year= Column(String, nullable=False)  # np. "skoda;octavia;2012"
+    author= Column(String)
+    rating= Column(String)  # 1–5
+    comment= Column(String)
