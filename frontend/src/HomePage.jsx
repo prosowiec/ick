@@ -246,6 +246,7 @@ function HomePage() {
                   <th className="p-4 text-left">Rok</th>
                   <th className="p-4 text-left">Cena</th>
                   <th className="p-4 text-left">Przebieg</th>
+                  <th className="p-4 text-left">Opinia</th>
                 </tr>
               </thead>
               <tbody>
@@ -270,7 +271,7 @@ function HomePage() {
                       <td className="p-4">{car.model}</td>
                       <td className="p-4">{car.year}</td>
                       <td className="p-4">{car.price} {car.currency}</td>
-                      <td className="p-4">{car.power} {car.power_unit}</td>
+                      <td className="p-4">{car.mileage}</td>
                       <td className="p-4">Lorem Ipsum</td>
                     </tr>
                   ))
