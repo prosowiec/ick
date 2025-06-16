@@ -151,21 +151,24 @@ def get_autoscout_avg_by_year(
         return {"data": data}
 
 @app.post("/reviews", response_model=ReviewOut)
-def create_review(review: ReviewCreate, db: Session = Depends(get_db)):
-    db_review = Review(**review.dict())
-    db.add(db_review)
-    db.commit()
-    db.refresh(db_review)
+def create_review(review: ReviewCreate):
+    with SessionLocal() as db:
+        db_review = Review(**review.dict())
+        db.add(db_review)
+        db.commit()
+        db.refresh(db_review)
     return db_review
 
 @app.get("/reviews", response_model=list[ReviewOut])
-def get_all_reviews(brand_model_year: str = None, db: Session = Depends(get_db)):
-    if brand_model_year:
-        return db.query(Review).filter(Review.brand_model_year == brand_model_year).all()
+def get_all_reviews(brand_model_year: str = None ):
+    with SessionLocal() as db:
+        if brand_model_year:
+            return db.query(Review).filter(Review.brand_model_year == brand_model_year).all()
     return db.query(Review).all()
 
 @app.get("/reviews/options")
 def get_review_options(db: Session = Depends(get_db)):
-    rows = db.query(Otomoto.make,Otomoto.model,Otomoto.year ).distinct().all()
+    with SessionLocal() as db:
+        rows = db.query(Otomoto.make,Otomoto.model,Otomoto.year ).distinct().all()
     #result = {"options": [row[0] for row in rows]}
     return rows
